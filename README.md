@@ -60,31 +60,132 @@ check added line
 
 create a new `expo-dev-client` and begin using `expo-dynamic-app-icon`
 
-## Use `setAppIcon`
+## API
 
-- if error, return **false**
-- else, return **changed app icon name**
+### Check if device supports alternate icons
+
+```typescript
+import { supportsAlternateIcons } from "expo-dynamic-app-icon";
+
+// Check if device supports changing app icons
+const isSupported = supportsAlternateIcons(); // returns boolean
+```
+
+### Change app icon (async with Promise)
+
+The recommended way to change app icons:
+
+```typescript
+import { setAppIconAsync } from "expo-dynamic-app-icon";
+
+try {
+  // Returns a Promise that resolves to the icon name
+  const newIcon = await setAppIconAsync("red");
+  console.log(`Icon changed to ${newIcon}`);
+} catch (error) {
+  console.error("Failed to change icon:", error);
+}
+```
+
+### Change app icon (legacy method)
+
+For backward compatibility:
 
 ```typescript
 import { setAppIcon } from "expo-dynamic-app-icon";
 
-...
-
-setAppIcon("red") // set icon 'assets/icon1.png'
+// Returns the icon name if successful, false if failed
+const result = setAppIcon("red");
+if (result === false) {
+  console.log("Failed to change icon");
+} else {
+  console.log(`Icon changed to ${result}`);
+}
 ```
 
-## Use `getAppIcon`
-
-get current app icon name
-
-- default return is `DEFAULT`
+### Get current app icon name
 
 ```typescript
 import { getAppIcon } from "expo-dynamic-app-icon";
 
-...
+// Returns current icon name, or "DEFAULT" if using the original icon
+const currentIcon = getAppIcon();
+```
 
-getAppIcon() // get current icon name 'red'
+### Get all available app icons
+
+```typescript
+import { getAvailableAppIcons } from "expo-dynamic-app-icon";
+
+// Returns array of available icon names including "DEFAULT"
+const availableIcons = getAvailableAppIcons();
+```
+
+## Example
+
+```typescript
+import React, { useEffect, useState } from 'react';
+import { View, Button, Text, Alert } from 'react-native';
+import { 
+  supportsAlternateIcons, 
+  setAppIconAsync, 
+  getAppIcon, 
+  getAvailableAppIcons 
+} from 'expo-dynamic-app-icon';
+
+export default function App() {
+  const [currentIcon, setCurrentIcon] = useState<string>('');
+  const [availableIcons, setAvailableIcons] = useState<string[]>([]);
+  const [isSupported, setIsSupported] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Check if the device supports changing app icons
+    const supported = supportsAlternateIcons();
+    setIsSupported(supported);
+
+    if (supported) {
+      // Get the current app icon
+      setCurrentIcon(getAppIcon());
+      
+      // Get all available app icons
+      setAvailableIcons(getAvailableAppIcons());
+    }
+  }, []);
+
+  const changeIcon = async (iconName: string) => {
+    try {
+      const newIcon = await setAppIconAsync(iconName);
+      setCurrentIcon(newIcon);
+      Alert.alert('Success', `App icon changed to ${newIcon}`);
+    } catch (error) {
+      Alert.alert('Error', `Failed to change app icon: ${error.message}`);
+    }
+  };
+
+  if (!isSupported) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>This device doesn't support changing app icons</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text>Current icon: {currentIcon}</Text>
+      <View style={{ marginTop: 20 }}>
+        {availableIcons.map(icon => (
+          <Button
+            key={icon}
+            title={`Change to ${icon}`}
+            onPress={() => changeIcon(icon)}
+            disabled={icon === currentIcon}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
 ```
 
 <a href="https://www.buymeacoffee.com/outsung" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
